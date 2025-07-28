@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pid=$(lsns | tail -n1 | awk '{print $4}')
+
+echo "$pid" > /sys/fs/cgroup/myns/cgroup.procs
+
