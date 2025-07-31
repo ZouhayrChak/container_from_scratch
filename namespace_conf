@@ -1,5 +1,15 @@
 #! /bin/bash
 
+wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-minirootfs-3.20.0-x86_64.tar.gz
+
+mkdir minirootfs
+
+tar -xzf alpine-minirootfs-3.20.0-x86_64.tar.gz -C minirootfs
+
+[ -d minirootfs/etc ] || mkdir -p minirootfs/etc
+
+echo 'nameserver 8.8.8.8' > minirootfs/etc/resolv.conf
+
 ip netns add myns
 
 ip link add veth0 type veth peer name veth1
@@ -15,17 +25,15 @@ ip netns exec myns ip link set lo up
 ip netns exec myns ip link set veth1 up
 ip netns exec myns ip route add default via 172.17.0.1
 
-mkdir -p /tmp/myns_etc
-bash -c "echo 'nameserver 8.8.8.8' > /tmp/myns_etc/resolv.conf"
-
 mkdir /sys/fs/cgroup/myns
 
-bash -c "echo '20000 100000' > /sys/fs/cgroup/myns/cpu.max"
-
+#limit cpu usage
+bash -c "echo '20000 100000' > /sys/fs/cgroup/myns/cpu.max" 
 
 ip netns exec myns unshare --mount --pid --ipc --uts --fork --mount-proc bash -c '
-mount --bind /tmp/myns_etc/resolv.conf /etc/resolv.conf
-exec bash
+mount --make-rprivate /
+hostname Zouhair
+chroot minirootfs
 '
 
 rmdir /sys/fs/cgroup/myns
